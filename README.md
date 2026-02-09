@@ -1,491 +1,129 @@
 <div align="center">
   <img src="nanobot_logo.png" alt="nanobot" width="500">
-  <h1>nanobot: Ultra-Lightweight Personal AI Assistant</h1>
+  <h1>Nanobot AI - 多租户投资分析助手平台</h1>
   <p>
-    <a href="https://pypi.org/project/nanobot-ai/"><img src="https://img.shields.io/pypi/v/nanobot-ai" alt="PyPI"></a>
-    <a href="https://pepy.tech/project/nanobot-ai"><img src="https://static.pepy.tech/badge/nanobot-ai" alt="Downloads"></a>
     <img src="https://img.shields.io/badge/python-≥3.11-blue" alt="Python">
     <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
-    <a href="./COMMUNICATION.md"><img src="https://img.shields.io/badge/Feishu-Group-E9DBFC?style=flat&logo=feishu&logoColor=white" alt="Feishu"></a>
-    <a href="./COMMUNICATION.md"><img src="https://img.shields.io/badge/WeChat-Group-C5EAB4?style=flat&logo=wechat&logoColor=white" alt="WeChat"></a>
-    <a href="https://discord.gg/MnCvHqpUGB"><img src="https://img.shields.io/badge/Discord-Community-5865F2?style=flat&logo=discord&logoColor=white" alt="Discord"></a>
+    <img src="https://img.shields.io/badge/架构-多租户-orange" alt="Architecture">
+    <img src="https://img.shields.io/badge/领域-金融科技-green" alt="Focus">
   </p>
 </div>
 
-🐈 **nanobot** is an **ultra-lightweight** personal AI assistant inspired by [Clawdbot](https://github.com/openclaw/openclaw) 
+本项目是基于 [Nanobot](https://github.com/HKUDS/nanobot) 框架的**二次开发版本**。我们将原有的轻量级个人助手扩展为一个功能完备的**多租户 SaaS 平台**，专门用于自动化投资分析和个性化报告生成。
 
-⚡️ Delivers core agent functionality in just **~4,000** lines of code — **99% smaller** than Clawdbot's 430k+ lines.
+本项目将 CLI 工具转化为服务化架构，能够同时支持多用户，并提供隔离的上下文、定时任务调度以及基于大模型（LLM）的专业金融报告生成能力。
 
-📏 Real-time line count: **3,428 lines** (run `bash core_agent_lines.sh` to verify anytime)
+## 🚀 二次开发核心特性
 
-## 📢 News
+### 1. 多租户架构 (Multi-Tenant)
+- **隔离的工作空间**：每个用户拥有独立的目录 (`~/.nanobot/workspaces/user_{id}`)，存储各自的配置、记忆和生成的报告。
+- **上下文动态切换**：`MultiTenantAgentLoop` 确保工具执行和记忆检索严格限制在当前活跃用户的环境内，防止数据越权。
+- **并发任务处理**：支持多用户同时在线，并能够并行处理各自的分析请求。
 
-- **2026-02-05** ✨ Added Feishu channel, DeepSeek provider, and enhanced scheduled tasks support!
-- **2026-02-04** 🚀 Released v0.1.3.post4 with multi-provider & Docker support! Check [release notes](https://github.com/HKUDS/nanobot/releases/tag/v0.1.3.post4) for details.
-- **2026-02-03** ⚡ Integrated vLLM for local LLM support and improved natural language task scheduling!
-- **2026-02-02** 🎉 nanobot officially launched! Welcome to try 🐈 nanobot!
+### 2. 自动化投资报告生成
+- **多维度报告**：支持生成投资日报 (Daily)、周报 (Weekly) 以及实时异动提醒 (Real-time)。
+- **动态 Prompt 引擎**：通过模板系统 (`nanobot/services/prompt_templates.py`) 自动注入用户关注列表 (Watchlist)、风险偏好、投资风格等个性化数据。
+- **前沿模型集成**：集成 Gemini 2.0 Flash (通过 `LiteLLMProvider`)，提供高质量、结构化的金融分析内容。
 
-## Key Features of nanobot:
+### 3. RESTful API 服务
+- **FastAPI 后端**：使用 FastAPI 替代了原本的命令行交互，提供标准化的 Web 服务接口 (`nanobot/api/main.py`)。
+- **主要接口**：
+  - `POST /users`: 创建新租户，初始化其投资画像和关注列表。
+  - `POST /reports`: 立即触发特定类型的报告生成。
+  - `PUT /users/{id}/watchlist`: 动态更新用户的投资关注标的。
+- **异步处理**：报告生成等耗时任务通过 Background Tasks 异步处理，确保接口响应性能。
 
-🪶 **Ultra-Lightweight**: Just ~3,400 lines of core agent code — 99% smaller than Clawdbot.
+### 4. 调度服务 (Scheduler)
+- **精准定时调度**：内置 `ReportScheduler` (基于 APScheduler)，可管理数千名用户的定时任务。
+- **用户自定义时区**：根据用户设置的时间点（如“每日上午 9:00”）准时触发分析逻辑。
 
-🔬 **Research-Ready**: Clean, readable code that's easy to understand, modify, and extend for research.
+## 🏗️ 系统架构
 
-⚡️ **Lightning Fast**: Minimal footprint means faster startup, lower resource usage, and quicker iterations.
+系统采用分层架构设计，确保了高扩展性和安全性：
 
-💎 **Easy-to-Use**: One-click to deploy and you're ready to go.
-
-## 🏗️ Architecture
-
-<p align="center">
-  <img src="nanobot_arch.png" alt="nanobot architecture" width="800">
-</p>
-
-## ✨ Features
-
-<table align="center">
-  <tr align="center">
-    <th><p align="center">📈 24/7 Real-Time Market Analysis</p></th>
-    <th><p align="center">🚀 Full-Stack Software Engineer</p></th>
-    <th><p align="center">📅 Smart Daily Routine Manager</p></th>
-    <th><p align="center">📚 Personal Knowledge Assistant</p></th>
-  </tr>
-  <tr>
-    <td align="center"><p align="center"><img src="case/search.gif" width="180" height="400"></p></td>
-    <td align="center"><p align="center"><img src="case/code.gif" width="180" height="400"></p></td>
-    <td align="center"><p align="center"><img src="case/scedule.gif" width="180" height="400"></p></td>
-    <td align="center"><p align="center"><img src="case/memory.gif" width="180" height="400"></p></td>
-  </tr>
-  <tr>
-    <td align="center">Discovery • Insights • Trends</td>
-    <td align="center">Develop • Deploy • Scale</td>
-    <td align="center">Schedule • Automate • Organize</td>
-    <td align="center">Learn • Memory • Reasoning</td>
-  </tr>
-</table>
-
-## 📦 Install
-
-**Install from source** (latest features, recommended for development)
-
-```bash
-git clone https://github.com/HKUDS/nanobot.git
-cd nanobot
-pip install -e .
+```mermaid
+graph TD
+    Client[客户端 / 前端] -->|REST API| API[FastAPI 网关]
+    API -->|管理| WM[工作空间管理器]
+    API -->|调度| Sched[报告调度器]
+    
+    Sched -->|触发| Gen[报告生成器]
+    Gen -->|组装上下文| MTLoop[多租户 Agent Loop]
+    
+    MTLoop -->|调用| LLM[Gemini / LiteLLM]
+    MTLoop -->|读写隔离数据| WS[用户工作空间 (文件系统)]
+    
+    subgraph "用户工作空间 (User Workspace)"
+        Config[config.json - 配置]
+        Memory[MEMORY.md - 长期记忆]
+        Reports[reports/*.md - 历史报告]
+    end
 ```
 
-**Install with [uv](https://github.com/astral-sh/uv)** (stable, fast)
+更多架构细节请参阅：[多租户架构设计文档](docs/architecture/multi-tenant.md)
 
-```bash
-uv tool install nanobot-ai
-```
-
-**Install from PyPI** (stable)
-
-```bash
-pip install nanobot-ai
-```
-
-## 🚀 Quick Start
-
-> [!TIP]
-> Set your API key in `~/.nanobot/config.json`.
-> Get API keys: [OpenRouter](https://openrouter.ai/keys) (LLM) · [Brave Search](https://brave.com/search/api/) (optional, for web search)
-> You can also change the model to `minimax/minimax-m2` for lower cost.
-
-**1. Initialize**
-
-```bash
-nanobot onboard
-```
-
-**2. Configure** (`~/.nanobot/config.json`)
-
-```json
-{
-  "providers": {
-    "openrouter": {
-      "apiKey": "sk-or-v1-xxx"
-    }
-  },
-  "agents": {
-    "defaults": {
-      "model": "anthropic/claude-opus-4-5"
-    }
-  },
-  "tools": {
-    "web": {
-      "search": {
-        "apiKey": "BSA-xxx"
-      }
-    }
-  }
-}
-```
-
-
-**3. Chat**
-
-```bash
-nanobot agent -m "What is 2+2?"
-```
-
-That's it! You have a working AI assistant in 2 minutes.
-
-## 🖥️ Local Models (vLLM)
-
-Run nanobot with your own local models using vLLM or any OpenAI-compatible server.
-
-**1. Start your vLLM server**
-
-```bash
-vllm serve meta-llama/Llama-3.1-8B-Instruct --port 8000
-```
-
-**2. Configure** (`~/.nanobot/config.json`)
-
-```json
-{
-  "providers": {
-    "vllm": {
-      "apiKey": "dummy",
-      "apiBase": "http://localhost:8000/v1"
-    }
-  },
-  "agents": {
-    "defaults": {
-      "model": "meta-llama/Llama-3.1-8B-Instruct"
-    }
-  }
-}
-```
-
-**3. Chat**
-
-```bash
-nanobot agent -m "Hello from my local LLM!"
-```
-
-> [!TIP]
-> The `apiKey` can be any non-empty string for local servers that don't require authentication.
-
-## 💬 Chat Apps
-
-Talk to your nanobot through Telegram, Discord, WhatsApp, or Feishu — anytime, anywhere.
-
-| Channel | Setup |
-|---------|-------|
-| **Telegram** | Easy (just a token) |
-| **Discord** | Easy (bot token + intents) |
-| **WhatsApp** | Medium (scan QR) |
-| **Feishu** | Medium (app credentials) |
-
-<details>
-<summary><b>Telegram</b> (Recommended)</summary>
-
-**1. Create a bot**
-- Open Telegram, search `@BotFather`
-- Send `/newbot`, follow prompts
-- Copy the token
-
-**2. Configure**
-
-```json
-{
-  "channels": {
-    "telegram": {
-      "enabled": true,
-      "token": "YOUR_BOT_TOKEN",
-      "allowFrom": ["YOUR_USER_ID"]
-    }
-  }
-}
-```
-
-> Get your user ID from `@userinfobot` on Telegram.
-
-**3. Run**
-
-```bash
-nanobot gateway
-```
-
-</details>
-
-<details>
-<summary><b>Discord</b></summary>
-
-**1. Create a bot**
-- Go to https://discord.com/developers/applications
-- Create an application → Bot → Add Bot
-- Copy the bot token
-
-**2. Enable intents**
-- In the Bot settings, enable **MESSAGE CONTENT INTENT**
-- (Optional) Enable **SERVER MEMBERS INTENT** if you plan to use allow lists based on member data
-
-**3. Get your User ID**
-- Discord Settings → Advanced → enable **Developer Mode**
-- Right-click your avatar → **Copy User ID**
-
-**4. Configure**
-
-```json
-{
-  "channels": {
-    "discord": {
-      "enabled": true,
-      "token": "YOUR_BOT_TOKEN",
-      "allowFrom": ["YOUR_USER_ID"]
-    }
-  }
-}
-```
-
-**5. Invite the bot**
-- OAuth2 → URL Generator
-- Scopes: `bot`
-- Bot Permissions: `Send Messages`, `Read Message History`
-- Open the generated invite URL and add the bot to your server
-
-**6. Run**
-
-```bash
-nanobot gateway
-```
-
-</details>
-
-<details>
-<summary><b>WhatsApp</b></summary>
-
-Requires **Node.js ≥18**.
-
-**1. Link device**
-
-```bash
-nanobot channels login
-# Scan QR with WhatsApp → Settings → Linked Devices
-```
-
-**2. Configure**
-
-```json
-{
-  "channels": {
-    "whatsapp": {
-      "enabled": true,
-      "allowFrom": ["+1234567890"]
-    }
-  }
-}
-```
-
-**3. Run** (two terminals)
-
-```bash
-# Terminal 1
-nanobot channels login
-
-# Terminal 2
-nanobot gateway
-```
-
-</details>
-
-<details>
-<summary><b>Feishu (飞书)</b></summary>
-
-Uses **WebSocket** long connection — no public IP required.
-
-```bash
-pip install nanobot-ai[feishu]
-```
-
-**1. Create a Feishu bot**
-- Visit [Feishu Open Platform](https://open.feishu.cn/app)
-- Create a new app → Enable **Bot** capability
-- **Permissions**: Add `im:message` (send messages)
-- **Events**: Add `im.message.receive_v1` (receive messages)
-  - Select **Long Connection** mode (requires running nanobot first to establish connection)
-- Get **App ID** and **App Secret** from "Credentials & Basic Info"
-- Publish the app
-
-**2. Configure**
-
-```json
-{
-  "channels": {
-    "feishu": {
-      "enabled": true,
-      "appId": "cli_xxx",
-      "appSecret": "xxx",
-      "encryptKey": "",
-      "verificationToken": "",
-      "allowFrom": []
-    }
-  }
-}
-```
-
-> `encryptKey` and `verificationToken` are optional for Long Connection mode.
-> `allowFrom`: Leave empty to allow all users, or add `["ou_xxx"]` to restrict access.
-
-**3. Run**
-
-```bash
-nanobot gateway
-```
-
-> [!TIP]
-> Feishu uses WebSocket to receive messages — no webhook or public IP needed!
-
-</details>
-
-## ⚙️ Configuration
-
-Config file: `~/.nanobot/config.json`
-
-### Providers
-
-> [!NOTE]
-> Groq provides free voice transcription via Whisper. If configured, Telegram voice messages will be automatically transcribed.
-
-| Provider | Purpose | Get API Key |
-|----------|---------|-------------|
-| `openrouter` | LLM (recommended, access to all models) | [openrouter.ai](https://openrouter.ai) |
-| `anthropic` | LLM (Claude direct) | [console.anthropic.com](https://console.anthropic.com) |
-| `openai` | LLM (GPT direct) | [platform.openai.com](https://platform.openai.com) |
-| `deepseek` | LLM (DeepSeek direct) | [platform.deepseek.com](https://platform.deepseek.com) |
-| `groq` | LLM + **Voice transcription** (Whisper) | [console.groq.com](https://console.groq.com) |
-| `gemini` | LLM (Gemini direct) | [aistudio.google.com](https://aistudio.google.com) |
-
-
-### Security
-
-> [!TIP]
-> For production deployments, set `"restrictToWorkspace": true` in your config to sandbox the agent.
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `tools.restrictToWorkspace` | `false` | When `true`, restricts **all** agent tools (shell, file read/write/edit, list) to the workspace directory. Prevents path traversal and out-of-scope access. |
-| `channels.*.allowFrom` | `[]` (allow all) | Whitelist of user IDs. Empty = allow everyone; non-empty = only listed users can interact. |
-
-
-## CLI Reference
-
-| Command | Description |
-|---------|-------------|
-| `nanobot onboard` | Initialize config & workspace |
-| `nanobot agent -m "..."` | Chat with the agent |
-| `nanobot agent` | Interactive chat mode |
-| `nanobot gateway` | Start the gateway |
-| `nanobot status` | Show status |
-| `nanobot channels login` | Link WhatsApp (scan QR) |
-| `nanobot channels status` | Show channel status |
-
-<details>
-<summary><b>Scheduled Tasks (Cron)</b></summary>
-
-```bash
-# Add a job
-nanobot cron add --name "daily" --message "Good morning!" --cron "0 9 * * *"
-nanobot cron add --name "hourly" --message "Check status" --every 3600
-
-# List jobs
-nanobot cron list
-
-# Remove a job
-nanobot cron remove <job_id>
-```
-
-</details>
-
-## 🐳 Docker
-
-> [!TIP]
-> The `-v ~/.nanobot:/root/.nanobot` flag mounts your local config directory into the container, so your config and workspace persist across container restarts.
-
-Build and run nanobot in a container:
-
-```bash
-# Build the image
-docker build -t nanobot .
-
-# Initialize config (first time only)
-docker run -v ~/.nanobot:/root/.nanobot --rm nanobot onboard
-
-# Edit config on host to add API keys
-vim ~/.nanobot/config.json
-
-# Run gateway (connects to Telegram/WhatsApp)
-docker run -v ~/.nanobot:/root/.nanobot -p 18790:18790 nanobot gateway
-
-# Or run a single command
-docker run -v ~/.nanobot:/root/.nanobot --rm nanobot agent -m "Hello!"
-docker run -v ~/.nanobot:/root/.nanobot --rm nanobot status
-```
-
-## 📁 Project Structure
+## 📂 项目结构
 
 ```
 nanobot/
-├── agent/          # 🧠 Core agent logic
-│   ├── loop.py     #    Agent loop (LLM ↔ tool execution)
-│   ├── context.py  #    Prompt builder
-│   ├── memory.py   #    Persistent memory
-│   ├── skills.py   #    Skills loader
-│   ├── subagent.py #    Background task execution
-│   └── tools/      #    Built-in tools (incl. spawn)
-├── skills/         # 🎯 Bundled skills (github, weather, tmux...)
-├── channels/       # 📱 WhatsApp integration
-├── bus/            # 🚌 Message routing
-├── cron/           # ⏰ Scheduled tasks
-├── heartbeat/      # 💓 Proactive wake-up
-├── providers/      # 🤖 LLM providers (OpenRouter, etc.)
-├── session/        # 💬 Conversation sessions
-├── config/         # ⚙️ Configuration
-└── cli/            # 🖥️ Commands
+├── api/            # 🌐 API 服务层 (新增)
+│   └── main.py     #    服务入口与接口定义
+├── services/       # 💼 业务逻辑层 (新增)
+│   ├── report_generator.py # 报告生成调度与 Prompt 组装
+│   ├── scheduler.py        # 基于 APScheduler 的任务调度
+│   └── user_config.py      # 用户画像与偏好管理
+├── agent/
+│   ├── multi_tenant_loop.py # 🔄 支持上下文切换的 Agent 核心 (修改)
+│   └── ...
+├── workspace/      # 📂 存储管理
+│   └── manager.py  #    工作空间创建与模板化管理
+├── channels/       # 📱 推送通道 (Telegram, 飞书, WhatsApp 等)
+└── ...
 ```
 
-## 🤝 Contribute & Roadmap
+## 📖 相关文档
 
-PRs welcome! The codebase is intentionally small and readable. 🤗
+我们重新整理了文档结构，方便开发者快速上手：
 
-**Roadmap** — Pick an item and [open a PR](https://github.com/HKUDS/nanobot/pulls)!
+- **入门指南**:
+  - [快速开始](docs/getting-started/quickstart.md) - 环境安装与基础使用。
+  - **API 参考**: 直接参考 `nanobot/api/main.py` 中的 FastAPI 定义。
 
-- [x] **Voice Transcription** — Support for Groq Whisper (Issue #13)
-- [ ] **Multi-modal** — See and hear (images, voice, video)
-- [ ] **Long-term memory** — Never forget important context
-- [ ] **Better reasoning** — Multi-step planning and reflection
-- [ ] **More integrations** — Discord, Slack, email, calendar
-- [ ] **Self-improvement** — Learn from feedback and mistakes
+- **架构与设计**:
+  - [多租户架构说明](docs/architecture/multi-tenant.md) - 核心隔离设计原理。
+  - [安全最佳实践](docs/security/best-practices.md) - 用户数据安全与工具沙箱限制。
 
-### Contributors
+- **配置说明**:
+  - [用户与 Agent 配置模板](workspace/USER.md) - 了解工作空间内的配置结构。
 
-<a href="https://github.com/HKUDS/nanobot/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=HKUDS/nanobot&max=100&columns=12" />
-</a>
+## ⚡ 快速开始 (API 模式)
 
+1.  **安装依赖**:
+    ```bash
+    pip install -e .
+    pip install fastapi uvicorn apscheduler
+    ```
 
-## ⭐ Star History
+2.  **启动 API 服务器**:
+    ```bash
+    uvicorn nanobot.api.main:app --host 0.0.0.0 --port 8000
+    ```
 
-<div align="center">
-  <a href="https://star-history.com/#HKUDS/nanobot&Date">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=HKUDS/nanobot&type=Date&theme=dark" />
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=HKUDS/nanobot&type=Date" />
-      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=HKUDS/nanobot&type=Date" style="border-radius: 15px; box-shadow: 0 0 30px rgba(0, 217, 255, 0.3);" />
-    </picture>
-  </a>
-</div>
+3.  **创建新用户 (示例)**:
+    ```bash
+    curl -X POST http://localhost:8000/users \
+      -H "Content-Type: application/json" \
+      -d '{"user_id": "investor_01"}'
+    ```
 
-<p align="center">
-  <em> Thanks for visiting ✨ nanobot!</em><br><br>
-  <img src="https://visitor-badge.laobi.icu/badge?page_id=HKUDS.nanobot&style=for-the-badge&color=00d4ff" alt="Views">
-</p>
+4.  **手动触发报告生成**:
+    ```bash
+    # 请确保已在环境变量或 main.py 中配置有效的 Gemini API Key
+    curl -X POST http://localhost:8000/reports \
+      -H "Authorization: Bearer investor_01" \
+      -H "Content-Type: application/json" \
+      -d '{"report_type": "daily"}'
+    ```
 
-
-<p align="center">
-  <sub>nanobot is for educational, research, and technical exchange purposes only</sub>
-</p>
+---
+<sub>本项目仅供学习、研究及技术交流使用。</sub>
