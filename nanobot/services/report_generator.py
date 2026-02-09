@@ -21,12 +21,12 @@ try:
         PromptTemplateManager,
         PromptRenderer,
         UserPersona,
-        ReportType,
-        create_report_prompt
+        ReportType
     )
     from nanobot.services.user_config import UserConfigManager, UserConfig
     from nanobot.workspace.manager import WorkspaceManager
     from nanobot.agent.multi_tenant_loop import MultiTenantAgentLoop
+    from nanobot.services.data_fetcher import DataFetcher, UserPreferenceFetcher
 except ImportError as e:
     logger.error(f"导入模块失败: {e}")
     # 定义占位符以便在没有依赖时也能导入
@@ -34,6 +34,8 @@ except ImportError as e:
     UserConfigManager = None
     WorkspaceManager = None
     MultiTenantAgentLoop = None
+    DataFetcher = None
+    UserPreferenceFetcher = None
 
 
 class ReportGenerator:
@@ -61,10 +63,11 @@ class ReportGenerator:
     
     def __init__(
         self,
-        config_manager: UserConfigManager,
-        workspace_manager: WorkspaceManager,
-        agent_loop: Optional[Any] = None,  # MultiTenantAgentLoop
-        template_manager: Optional[PromptTemplateManager] = None,
+        config_manager: Any,
+        workspace_manager: Any,
+        agent_loop: Optional[Any] = None,
+        template_manager: Optional[Any] = None,
+        data_fetcher: Optional[Any] = None,
         max_retries: int = 3,
         retry_delay: float = 1.0
     ):
@@ -76,6 +79,7 @@ class ReportGenerator:
             workspace_manager: 工作空间管理器
             agent_loop: 多租户 Agent Loop（用于调用 LLM）
             template_manager: Prompt 模板管理器（可选）
+            data_fetcher: 数据获取器（可选）
             max_retries: 生成失败时的最大重试次数
             retry_delay: 重试间隔（秒）
         """
@@ -99,6 +103,15 @@ class ReportGenerator:
             self.prompt_renderer = PromptRenderer(self.template_manager)
         else:
             self.prompt_renderer = None
+        
+        # 初始化数据获取器
+        if data_fetcher:
+            self.data_fetcher = data_fetcher
+        elif DataFetcher:
+            self.data_fetcher = DataFetcher()
+        else:
+            self.data_fetcher = None
+            logger.warning("DataFetcher 不可用")
         
         logger.info("[ReportGenerator] 初始化完成")
     
@@ -140,27 +153,28 @@ class ReportGenerator:
             # 2. 获取或创建用户画像
             user_persona = self._get_user_persona(user_id, user_config)
             
-            # 3. 准备数据（如果没有提供外部数据，尝试收集）
-            market_data = custom_data.get("market_data") if custom_data else None
-            news_data = custom_data.get("news_data") if custom_data else None
-            influencer_data = custom_data.get("influencer_data") if custom_data else None
+            # 3. 准备数据（如果没有提供外部数据，使用数据获取器收集）
+            if custom_data:
+                market_data = custom_data.get("market_data", "{}")
+                assets_data = custom_data.get("assets_data", "[]")
+                user_preference = custom_data.get("user_preference", "{}")
+            else:
+                # 自动获取数据
+                market_context, assets_details, user_preference = await self._collect_report_data(user_config, user_persona)
+                
+                market_data = json.dumps(market_context.to_dict(), ensure_ascii=False, indent=2)
+                assets_data = json.dumps([asset.to_dict() for asset in assets_details], ensure_ascii=False, indent=2)
             
             # 4. 生成 Prompt
-            if self.prompt_renderer:
-                prompt = self.prompt_renderer.render_report_prompt(
-                    user_id=user_id,
-                    report_type=ReportType(report_type),
-                    user_config=user_config,
-                    user_persona=user_persona,
-                    market_data=market_data,
-                    news_data=news_data,
-                    influencer_data=influencer_data
-                )
-            else:
-                # 降级方案：使用简单的 Prompt 生成
-                prompt = self._generate_simple_prompt(
-                    user_id, report_type, user_config, user_persona
-                )
+            prompt = await self._generate_enhanced_prompt(
+                user_id=user_id,
+                report_type=report_type,
+                user_config=user_config,
+                user_persona=user_persona,
+                market_data=market_data,
+                assets_data=assets_data,
+                user_preference=user_preference
+            )
             
             # 5. 调用 LLM 生成报告
             report_content = await self._call_llm_with_retry(
@@ -210,7 +224,116 @@ class ReportGenerator:
                 "error": str(e)
             }
     
-    def _get_user_persona(self, user_id: str, user_config) -> UserPersona:
+    async def _collect_report_data(
+        self,
+        user_config: Any,
+        user_persona: Any
+    ) -> tuple:
+        """
+        收集报告所需的数据
+        
+        Args:
+            user_config: 用户配置
+            user_persona: 用户画像
+            
+        Returns:
+            (market_context, assets_details, user_preference)
+        """
+        logger.info("[ReportGenerator] 收集报告数据...")
+        
+        # 并行获取市场数据和用户偏好
+        market_context_task = self.data_fetcher.fetch_market_context() if self.data_fetcher else None
+        user_preference = UserPreferenceFetcher.get_user_preference(user_config) if UserPreferenceFetcher else {}
+        
+        # 获取用户关注的标的
+        symbols = getattr(user_config.watchlist, 'stocks', [])
+        
+        # 获取标的详细数据
+        assets_details = []
+        if self.data_fetcher and symbols:
+            assets_details = await self.data_fetcher.fetch_asset_details(symbols)
+        
+        # 获取市场上下文
+        market_context = await market_context_task if market_context_task else None
+        if not market_context:
+            from nanobot.services.data_fetcher import MarketContext
+            market_context = MarketContext()
+        
+        return market_context, assets_details, user_preference
+    
+    async def _generate_enhanced_prompt(
+        self,
+        user_id: str,
+        report_type: str,
+        user_config: Any,
+        user_persona: Any,
+        market_data: str,
+        assets_data: str,
+        user_preference: str
+    ) -> str:
+        """
+        生成增强版 Prompt（使用新的模板结构）
+        
+        Args:
+            user_id: 用户 ID
+            report_type: 报告类型
+            user_config: 用户配置
+            user_persona: 用户画像
+            market_data: 市场数据 JSON 字符串
+            assets_data: 标的详细数据 JSON 字符串
+            user_preference: 用户偏好 JSON 字符串
+            
+        Returns:
+            完整的 Prompt 字符串
+        """
+        # 获取模板
+        template = self.template_manager.get_template("daily_report", user_id) if self.template_manager else None
+        if not template:
+            return self._generate_simple_prompt(user_id, report_type, user_config, user_persona)
+        
+        # 准备变量
+        variables = {
+            "user_id": user_id,
+            "report_date": datetime.now().strftime("%Y年%m月%d日"),
+            "watchlist": assets_data,
+            "user_persona": self._format_user_preference(user_preference),
+            "market_data": market_data,
+            "news_summary": "",
+            "influencer_opinions": ""
+        }
+        
+        return template.render(variables)
+    
+    def _format_user_preference(self, user_preference: Any) -> str:
+        """
+        格式化用户偏好
+        
+        Args:
+            user_preference: 用户偏好数据（dict 或 JSON 字符串）
+            
+        Returns:
+            格式化后的字符串
+        """
+        import json
+        
+        if isinstance(user_preference, str):
+            try:
+                user_preference = json.loads(user_preference)
+            except:
+                return user_preference
+        
+        if isinstance(user_preference, dict):
+            investment_style = user_preference.get("investment_style", "价值投资")
+            risk_level = user_preference.get("risk_level", "中等")
+            
+            return f"""
+**投资风格**: {investment_style}
+**风险等级**: {risk_level}
+"""
+        
+        return str(user_preference)
+    
+    def _get_user_persona(self, user_id: str, user_config) -> Any:
         """
         获取用户画像
         
@@ -226,14 +349,18 @@ class ReportGenerator:
         # 从 config.json 中读取用户画像数据（如果有）
         persona_data = getattr(user_config, 'custom_data', {}).get('persona', {})
         
-        return UserPersona(
-            risk_preference=persona_data.get('risk_preference', 'moderate'),
-            investment_experience=persona_data.get('investment_experience', 'intermediate'),
-            investment_horizon=persona_data.get('investment_horizon', 'medium'),
-            preferred_report_length=persona_data.get('preferred_report_length', 'medium'),
-            focus_areas=persona_data.get('focus_areas', []),
-            avoid_topics=persona_data.get('avoid_topics', [])
-        )
+        # 检查 UserPersona 是否可用
+        if 'UserPersona' in globals() and UserPersona:
+            return UserPersona(
+                risk_preference=persona_data.get('risk_preference', 'moderate'),
+                investment_experience=persona_data.get('investment_experience', 'intermediate'),
+                investment_horizon=persona_data.get('investment_horizon', 'medium'),
+                preferred_report_length=persona_data.get('preferred_report_length', 'medium'),
+                focus_areas=persona_data.get('focus_areas', []),
+                avoid_topics=persona_data.get('avoid_topics', [])
+            )
+        else:
+            return {"risk_preference": "moderate"}
     
     async def _call_llm_with_retry(
         self,
@@ -314,7 +441,7 @@ class ReportGenerator:
         user_id: str,
         report_type: str,
         user_config: Any,
-        user_persona: UserPersona
+        user_persona: Any
     ) -> str:
         """
         生成简单的 Prompt（降级方案）
@@ -377,8 +504,8 @@ class ReportGenerator:
 
 # 便捷函数：快速生成报告
 def create_report_generator(
-    config_manager: UserConfigManager,
-    workspace_manager: WorkspaceManager,
+    config_manager: Any,
+    workspace_manager: Any,
     agent_loop: Optional[Any] = None
 ) -> ReportGenerator:
     """
