@@ -154,18 +154,32 @@ async def lifespan(app: FastAPI):
     config_manager = UserConfigManager("~/.nanobot/workspaces")
     print("  ✓ User Config Manager initialized")
     
-    # Initialize report scheduler (optional, only if APScheduler is available)
-    print("\n[3] Initializing Report Scheduler...")
+    # Initialize report generator and scheduler (optional, only if APScheduler is available)
+    print("\n[3] Initializing Report Generator & Scheduler...")
     try:
         from nanobot.services.scheduler import ReportScheduler
+        from nanobot.services.report_generator_simple import ReportGenerator
+        
+        # Initialize ReportGenerator with required dependencies
+        report_generator = ReportGenerator(
+            config_manager=config_manager,
+            workspace_manager=workspace_manager,
+            agent_loop=None,  # Can be initialized later if needed
+            max_retries=3
+        )
+        print("  ✓ Report Generator initialized")
+        
+        # Initialize ReportScheduler with the report_generator
         report_scheduler = ReportScheduler(
-            workspace_base="~/.nanobot/workspaces"
+            workspace_base="~/.nanobot/workspaces",
+            report_generator=report_generator
         )
         await report_scheduler.start()
-        print("  ✓ Report Scheduler initialized")
+        print("  ✓ Report Scheduler initialized and started")
     except ImportError as e:
         print(f"  ⚠ Report Scheduler not available: {e}")
         report_scheduler = None
+        report_generator = None
     
     print("\n" + "=" * 60)
     print("nanobot Multi-Tenant Service Started!")

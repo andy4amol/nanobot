@@ -24,6 +24,7 @@ except ImportError:
 
 from nanobot.workspace.manager import WorkspaceManager
 from nanobot.services.user_config import UserConfigManager, UserConfig
+from nanobot.services.report_generator_simple import ReportGenerator
 
 
 class ReportScheduler:
