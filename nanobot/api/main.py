@@ -28,6 +28,9 @@ from nanobot.config.loader import load_config
 # Import scheduler
 from nanobot.services.scheduler import ReportScheduler
 
+# Import logger
+from loguru import logger
+
 # Security
 security = HTTPBearer()
 
@@ -35,6 +38,7 @@ security = HTTPBearer()
 workspace_manager: Optional[WorkspaceManager] = None
 config_manager: Optional[UserConfigManager] = None
 report_scheduler: Optional[ReportScheduler] = None
+agent_loop: Optional[Any] = None  # Agent loop for LLM processing
 
 # Pydantic models for API requests/responses
 
@@ -138,7 +142,7 @@ class HealthCheck(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
-    global workspace_manager, config_manager, report_scheduler
+    global workspace_manager, config_manager, report_scheduler, agent_loop
     
     print("=" * 60)
     print("Starting nanobot Multi-Tenant Service")
@@ -154,8 +158,51 @@ async def lifespan(app: FastAPI):
     config_manager = UserConfigManager("~/.nanobot/workspaces")
     print("  ✓ User Config Manager initialized")
     
+    # Initialize LLM provider and agent loop for real report generation
+    print("\n[3] Initializing LLM Provider & Agent Loop...")
+    agent_loop = None
+    llm_provider = None
+    message_bus = None
+    try:
+        from nanobot.providers.litellm_provider import LiteLLMProvider
+        from nanobot.agent.multi_tenant_loop import MultiTenantAgentLoop
+        from nanobot.bus.queue import MessageBus
+        
+        # Initialize Gemini LLM provider
+        # Get API key from environment or use the provided one
+        gemini_api_key = "AIzaSyCoBZlzOKBCAJ44MmMZe3rSKYnWL7lW_lo"
+        
+        if gemini_api_key:
+            # Initialize MessageBus for agent communication
+            message_bus = MessageBus()
+            print("  ✓ MessageBus initialized")
+            
+            llm_provider = LiteLLMProvider(
+                api_key=gemini_api_key,
+                default_model="gemini/gemini-2.0-flash"  # Use Gemini 2.0 Flash model
+            )
+            print("  ✓ Gemini LLM Provider initialized (model: gemini-2.0-flash)")
+            
+            # Initialize MultiTenantAgentLoop with all required parameters
+            agent_loop = MultiTenantAgentLoop(
+                bus=message_bus,
+                provider=llm_provider,
+                workspace_manager=workspace_manager,
+                model="gemini/gemini-2.0-flash"
+            )
+            print("  ✓ MultiTenantAgentLoop initialized")
+        else:
+            print("  ⚠ No API key found, LLM Provider not initialized")
+    except Exception as e:
+        print(f"  ⚠ Failed to initialize LLM components: {e}")
+        import traceback
+        traceback.print_exc()
+        agent_loop = None
+        llm_provider = None
+        message_bus = None
+    
     # Initialize report generator and scheduler (optional, only if APScheduler is available)
-    print("\n[3] Initializing Report Generator & Scheduler...")
+    print("\n[4] Initializing Report Generator & Scheduler...")
     try:
         from nanobot.services.scheduler import ReportScheduler
         from nanobot.services.report_generator_simple import ReportGenerator
@@ -164,7 +211,7 @@ async def lifespan(app: FastAPI):
         report_generator = ReportGenerator(
             config_manager=config_manager,
             workspace_manager=workspace_manager,
-            agent_loop=None,  # Can be initialized later if needed
+            agent_loop=agent_loop,  # Now using real LLM if available
             max_retries=3
         )
         print("  ✓ Report Generator initialized")
@@ -218,12 +265,11 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     """Extract and validate user from JWT token."""
     # For demo purposes, just return the token as user_id
     # In production, implement proper JWT validation
-    import jwt
     try:
         # This is a placeholder - implement proper JWT validation
-        # payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=["HS256"])
-        # return payload.get("sub")
-        return credentials.credentials  # Placeholder
+        # For now, we simply return the credentials as the user_id
+        # This allows testing without JWT library
+        return credentials.credentials
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -282,16 +328,39 @@ async def create_user(user: UserCreate):
         return UserResponse(**existing_config.to_dict())
     
     try:
-        # Create workspace
-        workspace_manager.create_workspace(
-            user_id=user.user_id,
-            template_data=user.initial_data
-        )
+        # Create workspace (idempotent - will not fail if already exists)
+        try:
+            workspace_manager.create_workspace(
+                user_id=user.user_id,
+                template_data=user.initial_data
+            )
+        except FileExistsError:
+            # Workspace already exists, which is fine
+            pass
         
-        # Create user config
-        config = config_manager.create_user(user.user_id, user.initial_data)
+        # Create user config - this will raise ValueError if user exists
+        try:
+            config = config_manager.create_user(user.user_id, user.initial_data)
+            return UserResponse(**config.to_dict())
+        except ValueError as ve:
+            # User already exists - return the existing user
+            if "already exists" in str(ve).lower():
+                existing_config = config_manager.get_config(user.user_id)
+                if existing_config:
+                    return UserResponse(**existing_config.to_dict())
+            # Re-raise other ValueErrors
+            raise
+        except Exception as e:
+            # Check if it's a "user already exists" error
+            if "already exists" in str(e).lower():
+                existing_config = config_manager.get_config(user.user_id)
+                if existing_config:
+                    return UserResponse(**existing_config.to_dict())
+            # Re-raise other exceptions
+            raise
         
-        return UserResponse(**config.to_dict())
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -444,17 +513,49 @@ async def generate_report(
     user_id: str = Depends(get_current_user)
 ):
     """Request generation of a report."""
+    global report_scheduler
+    
     report_id = str(uuid.uuid4())
     
-    # Schedule report generation
-    # This would use ReportScheduler
+    # Check if report scheduler is available
+    if not report_scheduler:
+        return ReportResponse(
+            report_id=report_id,
+            user_id=user_id,
+            status="error",
+            message="Report scheduler is not available",
+            estimated_completion_time=None
+        )
+    
+    # Schedule report generation immediately using background task
+    async def generate_report_task():
+        """Background task to generate report."""
+        try:
+            logger.info(f"Starting immediate report generation for {user_id}")
+            
+            # Use the scheduler's generate_report_now method
+            result_report_id = await report_scheduler.generate_report_now(
+                user_id=user_id,
+                report_type=request.report_type
+            )
+            
+            if result_report_id:
+                logger.info(f"Report generated successfully for {user_id}: {result_report_id}")
+            else:
+                logger.error(f"Failed to generate report for {user_id}")
+                
+        except Exception as e:
+            logger.error(f"Error in report generation task for {user_id}: {e}")
+    
+    # Add the task to background tasks
+    background_tasks.add_task(generate_report_task)
     
     return ReportResponse(
         report_id=report_id,
         user_id=user_id,
         status="scheduled",
-        message=f"Report generation scheduled. Report ID: {report_id}",
-        estimated_completion_time="5 minutes"
+        message=f"Report generation scheduled and will run immediately. Report ID: {report_id}",
+        estimated_completion_time="1-2 minutes"
     )
 
 

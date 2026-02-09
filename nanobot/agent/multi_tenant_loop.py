@@ -140,7 +140,7 @@ class MultiTenantAgentLoop:
         self._tools.register(ExecTool(
             working_dir=str(self.current_workspace),
             timeout=self.exec_config.timeout,
-            restrict_to_workspace=self.exec_config.restrict_to_workspace,
+            restrict_to_workspace=getattr(self.exec_config, 'restrict_to_workspace', False),
         ))
         
         # Web tools
