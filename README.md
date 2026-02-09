@@ -43,20 +43,20 @@
 
 ```mermaid
 graph TD
-    Client[客户端 / 前端] -->|REST API| API[FastAPI 网关]
-    API -->|管理| WM[工作空间管理器]
-    API -->|调度| Sched[报告调度器]
+    Client["客户端 / 前端"] -->|REST API| API["FastAPI 网关"]
+    API -->|管理| WM["工作空间管理器"]
+    API -->|调度| Sched["报告调度器"]
     
-    Sched -->|触发| Gen[报告生成器]
-    Gen -->|组装上下文| MTLoop[多租户 Agent Loop]
+    Sched -->|触发| Gen["报告生成器"]
+    Gen -->|组装上下文| MTLoop["多租户 Agent Loop"]
     
-    MTLoop -->|调用| LLM[Gemini / LiteLLM]
-    MTLoop -->|读写隔离数据| WS[用户工作空间 (文件系统)]
+    MTLoop -->|调用| LLM["Gemini / LiteLLM"]
+    MTLoop -->|读写隔离数据| WS["用户工作空间 (File System)"]
     
-    subgraph "用户工作空间 (User Workspace)"
-        Config[config.json - 配置]
-        Memory[MEMORY.md - 长期记忆]
-        Reports[reports/*.md - 历史报告]
+    subgraph UserWorkspace ["用户工作空间 (User Workspace)"]
+        Config["config.json - 配置"]
+        Memory["MEMORY.md - 长期记忆"]
+        Reports["reports/*.md - 历史报告"]
     end
 ```
 
