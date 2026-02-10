@@ -1,0 +1,106 @@
+INFO:     Started server process [25216]
+INFO:     Waiting for application startup.
+2026-02-09 16:28:15.048 | INFO     | nanobot.services.report_generator_simple:__init__:29 - [ReportGenerator] 初始化完成
+2026-02-09 16:28:15.051 | INFO     | nanobot.services.scheduler:start:93 - ReportScheduler started
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+============================================================
+Starting nanobot Multi-Tenant Service
+============================================================
+
+[1] Initializing Workspace Manager...
+[WorkspaceManager] 基础路径: /Users/lulei/.nanobot/workspaces
+  ✓ Workspace Manager initialized
+
+[2] Initializing User Config Manager...
+[UserConfigManager] 基础路径: /Users/lulei/.nanobot/workspaces
+  ✓ User Config Manager initialized
+
+[3] Initializing LLM Provider & Agent Loop...
+  ✓ MessageBus initialized
+  ✓ Gemini LLM Provider initialized (model: gemini-2.0-flash)
+[MultiTenantAgentLoop] 初始化完成，默认模型: gemini/gemini-2.0-flash
+  ✓ MultiTenantAgentLoop initialized
+
+[4] Initializing Report Generator & Scheduler...
+  ✓ Report Generator initialized
+[WorkspaceManager] 基础路径: /Users/lulei/.nanobot/workspaces
+[UserConfigManager] 基础路径: /Users/lulei/.nanobot/workspaces
+  ✓ Report Scheduler initialized and started
+
+============================================================
+nanobot Multi-Tenant Service Started!
+============================================================
+[WorkspaceManager] 用户 test_user_llm_1 的 workspace 已存在，删除重建
+[WorkspaceManager] 为用户 test_user_llm_1 创建 workspace...
+  创建目录: memory/
+  创建目录: reports/
+  创建目录: data/
+  创建目录: skills/
+  创建文件: AGENTS.md
+  创建文件: USER.md
+  创建文件: SOUL.md
+  创建文件: HEARTBEAT.md
+  创建文件: memory/MEMORY.md
+  创建文件: config.json
+[WorkspaceManager] 用户 test_user_llm_1 的 workspace 创建完成！
+INFO:     127.0.0.1:64709 - "POST /users HTTP/1.1" 201 Created
+[UserConfigManager] 更新用户 test_user_llm_1 关注列表成功
+INFO:     127.0.0.1:64710 - "PUT /users/test_user_llm_1/watchlist HTTP/1.1" 200 OK
+[UserConfigManager] 更新用户 test_user_llm_1 偏好成功
+INFO:     127.0.0.1:64711 - "PUT /users/test_user_llm_1/preferences HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64712 - "POST /reports HTTP/1.1" 200 OK
+2026-02-09 16:28:27.634 | INFO     | nanobot.api.main:generate_report_task:534 - Starting immediate report generation for test_user_llm_1
+2026-02-09 16:28:27.634 | INFO     | nanobot.services.scheduler:generate_report_now:363 - Manually triggering report generation for test_user_llm_1
+2026-02-09 16:28:27.634 | INFO     | nanobot.services.scheduler:_generate_report_task:294 - Starting report generation for test_user_llm_1: daily
+2026-02-09 16:28:27.635 | INFO     | nanobot.services.report_generator_simple:generate_report:39 - [ReportGenerator] 开始生成报告: user=test_user_llm_1, type=daily
+2026-02-09 16:28:27.635 | INFO     | nanobot.services.report_generator_simple:_call_llm_with_retry:300 - [ReportGenerator] 调用 LLM 尝试 1/3
+[MultiTenantAgentLoop] 正在切换到用户 test_user_llm_1 的 workspace: /Users/lulei/.nanobot/workspaces/user_test_user_llm_1
+[MultiTenantAgentLoop] 已注册 9 个工具
+[MultiTenantAgentLoop] 已成功切换到用户 test_user_llm_1 的 workspace
+[WorkspaceManager] 用户 test_user_llm_2 的 workspace 已存在，删除重建
+[WorkspaceManager] 为用户 test_user_llm_2 创建 workspace...
+  创建目录: memory/
+  创建目录: reports/
+  创建目录: data/
+  创建目录: skills/
+  创建文件: AGENTS.md
+  创建文件: USER.md
+  创建文件: SOUL.md
+  创建文件: HEARTBEAT.md
+  创建文件: memory/MEMORY.md
+  创建文件: config.json
+[WorkspaceManager] 用户 test_user_llm_2 的 workspace 创建完成！
+INFO:     127.0.0.1:64713 - "POST /users HTTP/1.1" 201 Created
+[UserConfigManager] 更新用户 test_user_llm_2 关注列表成功
+INFO:     127.0.0.1:64714 - "PUT /users/test_user_llm_2/watchlist HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64715 - "POST /reports HTTP/1.1" 200 OK
+2026-02-09 16:28:27.678 | INFO     | nanobot.api.main:generate_report_task:534 - Starting immediate report generation for test_user_llm_1
+2026-02-09 16:28:27.685 | INFO     | nanobot.services.scheduler:generate_report_now:363 - Manually triggering report generation for test_user_llm_1
+2026-02-09 16:28:27.691 | INFO     | nanobot.services.scheduler:_generate_report_task:294 - Starting report generation for test_user_llm_1: daily
+2026-02-09 16:28:27.739 | INFO     | nanobot.services.report_generator_simple:generate_report:39 - [ReportGenerator] 开始生成报告: user=test_user_llm_1, type=daily
+2026-02-09 16:28:27.740 | INFO     | nanobot.services.report_generator_simple:_call_llm_with_retry:300 - [ReportGenerator] 调用 LLM 尝试 1/3
+[MultiTenantAgentLoop] 已在用户 test_user_llm_1 的 workspace
+INFO:     127.0.0.1:64716 - "POST /reports HTTP/1.1" 200 OK
+2026-02-09 16:28:27.760 | INFO     | nanobot.api.main:generate_report_task:534 - Starting immediate report generation for test_user_llm_2
+2026-02-09 16:28:27.760 | INFO     | nanobot.services.scheduler:generate_report_now:363 - Manually triggering report generation for test_user_llm_2
+2026-02-09 16:28:27.760 | INFO     | nanobot.services.scheduler:_generate_report_task:294 - Starting report generation for test_user_llm_2: daily
+2026-02-09 16:28:27.760 | INFO     | nanobot.services.report_generator_simple:generate_report:39 - [ReportGenerator] 开始生成报告: user=test_user_llm_2, type=daily
+2026-02-09 16:28:27.760 | INFO     | nanobot.services.report_generator_simple:_call_llm_with_retry:300 - [ReportGenerator] 调用 LLM 尝试 1/3
+2026-02-09 16:28:33.453 | INFO     | nanobot.services.report_generator_simple:_save_report:612 - [ReportGenerator] 报告已保存: /Users/lulei/.nanobot/workspaces/user_test_user_llm_2/reports/daily_20260209_162833.md
+2026-02-09 16:28:33.454 | INFO     | nanobot.services.report_generator_simple:generate_report:77 - [ReportGenerator] 报告生成成功: daily_20260209_162833
+2026-02-09 16:28:33.454 | INFO     | nanobot.services.scheduler:_generate_report_task:309 - Report generated for test_user_llm_2: {'success': True, 'report_id': 'daily_20260209_162833', 'report_path': '/Users/lulei/.nanobot/workspaces/user_test_user_llm_2/reports/daily_20260209_162833.md', 'content': '```markdown\n# 2026年02月09日 投资日报\n\n## 市场概览\n\n今日市场整体呈现震荡走势。主要指数涨跌互现，**成交量较昨日略有萎缩**。板块方面，科技板块表现活跃，而传统能源板块则相对疲软。市场情绪较为谨慎，投资者观望情绪较浓。具体来看，数字货币市场波动较大，BTC和ETH均出现不同程度的涨跌。整体市场缺乏明确方向，短期内或将维持震荡格局。\n\n## 重点标的分析\n\n### BTC\n\nBTC今日价格波动较大，**最高触及X美元，最低跌至Y美元**。技术面上，BTC目前在关键支撑位附近震荡，短期内可能面临方向选择。相关新闻方面，**XX公司宣布将BTC纳入资产配置**，对市场情绪产生一定提振作用。\n\n### ETH\n\nETH今日表现与BTC类似，同样呈现宽幅震荡走势。**价格在Z美元附近徘徊**。技术面上，ETH的短期均线系统呈现胶着状态，后市走势仍不明朗。值得关注的是，**以太坊2.0的升级进展缓慢**，可能对ETH的价格产生一定压制。\n\n## 大V观点汇总\n\n- **XX财经大V**: 今日发文表示，**数字货币市场短期内面临回调风险，建议投资者保持谨慎**。\n- **YY技术分析师**: 认为**BTC目前处于筑底阶段，长期来看仍具备投资价值**。\n- **ZZ投资策略师**: 强调**ETF在资产配置中的重要性，建议投资者适当配置ETF产品**。\n\n## 明日关注要点\n\n- **美国将公布最新的CPI数据**，可能对市场产生较大影响。\n- **美联储官员将发表讲话**，投资者需关注其对未来货币政策的表态。\n- **关注地缘政治风险**，可能引发市场避险情绪。\n```', 'metadata': {'report_type': 'daily', 'user_id': 'test_user_llm_2', 'generated_at': '2026-02-09T16:28:33.454166'}}
+2026-02-09 16:28:33.454 | INFO     | nanobot.api.main:generate_report_task:543 - Report generated successfully for test_user_llm_2: manual_20260209_162833
+2026-02-09 16:28:34.354 | INFO     | nanobot.services.report_generator_simple:_save_report:612 - [ReportGenerator] 报告已保存: /Users/lulei/.nanobot/workspaces/user_test_user_llm_1/reports/daily_20260209_162834.md
+2026-02-09 16:28:34.354 | INFO     | nanobot.services.report_generator_simple:generate_report:77 - [ReportGenerator] 报告生成成功: daily_20260209_162834
+2026-02-09 16:28:34.354 | INFO     | nanobot.services.scheduler:_generate_report_task:309 - Report generated for test_user_llm_1: {'success': True, 'report_id': 'daily_20260209_162834', 'report_path': '/Users/lulei/.nanobot/workspaces/user_test_user_llm_1/reports/daily_20260209_162834.md', 'content': '```markdown\n# 2026年02月09日 投资日报\n\n## 市场概览\n\n今日美股市场呈现分化走势。道琼斯工业平均指数小幅上涨，标普500指数基本持平，纳斯达克综合指数则小幅下跌。整体而言，市场情绪较为谨慎，投资者在等待更多经济数据的指引。板块方面，能源板块受益于油价上涨表现强势，而科技板块则受到部分公司业绩不及预期的拖累。成交量较前一交易日有所下降，表明市场观望气氛浓厚。当前市场面临通胀压力和加息预期的双重挑战，波动性可能加剧。\n\n## 重点标的分析\n\n*   **NVDA (英伟达)**：股价今日下跌1.2%。技术面上，股价在前期高位震荡，短期面临回调风险。市场对英伟达的估值存在争议，部分投资者认为其股价已经充分反映了未来的增长潜力。需要关注其后续业绩表现以及在AI芯片市场的竞争态势。\n*   **TSLA (特斯拉)**：股价今日上涨0.3%。特斯拉股价今日小幅上涨，但整体走势依然疲软。市场对其交付量增长的可持续性存在担忧，同时也关注其在自动驾驶技术方面的进展。值得注意的是，近期多家竞争对手推出了更具竞争力的电动车型，特斯拉面临的市场压力正在增加。\n*   **AAPL (苹果)**：股价今日下跌0.7%。苹果股价今日下跌，可能受到市场对新款iPhone创新不足的担忧。此外，苹果在AR/VR领域的布局尚未看到明显的商业化成果。投资者需要关注其在新兴技术领域的进展，以及其服务业务的增长潜力。\n\n## 大V观点汇总\n\n*   **Elon Musk (埃隆·马斯克)** 今日在社交媒体上再次强调了人工智能的潜在风险，并呼吁加强对AI技术的监管。\n*   **Cathie Wood (凯西·伍德)** 旗下ARK基金今日小幅减持了苹果的股票，并增加了对一家新兴电动汽车公司的投资。她认为，颠覆式创新将是未来投资的主题，投资者应该关注具有高增长潜力的公司。\n\n整体来看，大V观点存在分歧。马斯克对AI风险的担忧值得警惕，而伍德对创新领域的乐观态度也具有一定的参考价值。\n\n## 明日关注要点\n\n*   **美国消费者信心指数公布**：关注即将公布的美国消费者信心指数，这将反映消费者对经济前景的看法。\n*   **美联储官员讲话**：关注美联储官员的讲话，从中寻找未来货币政策的线索。\n*   **地缘政治风险**：关注地缘政治局势的变化，这可能对市场情绪产生较大影响。投资者应保持谨慎，控制仓位，并关注风险管理。\n```', 'metadata': {'report_type': 'daily', 'user_id': 'test_user_llm_1', 'generated_at': '2026-02-09T16:28:34.354220'}}
+2026-02-09 16:28:34.354 | INFO     | nanobot.api.main:generate_report_task:543 - Report generated successfully for test_user_llm_1: manual_20260209_162834
+2026-02-09 16:28:34.390 | INFO     | nanobot.services.report_generator_simple:_save_report:612 - [ReportGenerator] 报告已保存: /Users/lulei/.nanobot/workspaces/user_test_user_llm_1/reports/daily_20260209_162834.md
+2026-02-09 16:28:34.390 | INFO     | nanobot.services.report_generator_simple:generate_report:77 - [ReportGenerator] 报告生成成功: daily_20260209_162834
+2026-02-09 16:28:34.390 | INFO     | nanobot.services.scheduler:_generate_report_task:309 - Report generated for test_user_llm_1: {'success': True, 'report_id': 'daily_20260209_162834', 'report_path': '/Users/lulei/.nanobot/workspaces/user_test_user_llm_1/reports/daily_20260209_162834.md', 'content': '```markdown\n# 2026年02月09日 投资日报\n\n## 市场概览\n\n今日美股市场呈现分化走势，科技股承压。道琼斯工业平均指数收涨0.3%，报39000点，主要受到传统经济板块的支撑。标普500指数微跌0.1%，报5000点。纳斯达克综合指数下跌0.5%，报16000点，反映出市场对科技股的谨慎情绪。成交量方面，整体市场活跃度适中。板块轮动加速，能源、金融等价值板块表现相对较好，而前期强势的科技板块出现回调。投资者关注即将公布的经济数据，以及美联储的政策信号。考虑到您是稳健型投资者，建议关注风险控制。\n\n## 重点标的分析\n\n*   **NVDA (英伟达)**：股价今日小幅下跌1.0%。尽管回调，但市场对英伟达在AI芯片领域的领先地位依然认可。技术面上，股价短期或面临震荡，但长期上升趋势未变。**需关注半导体行业整体景气度及竞争格局变化。**\n*   **TSLA (特斯拉)**：股价今日上涨0.5%。特斯拉股价小幅上涨，但波动幅度不大。近期，多家机构发布了对特斯拉未来交付量的预测，存在一定分歧。**建议关注特斯拉的产能扩张情况以及市场需求变化。**\n*   **AAPL (苹果)**：股价今日下跌0.8%。苹果股价下跌可能与市场对新款iPhone创新不足的担忧有关。同时，竞争对手在高端手机市场的发力也给苹果带来压力。**建议关注苹果在AR/VR等新领域的进展，以及其服务业务的增长潜力。**\n\n## 大V观点汇总\n\n*   **Elon Musk (埃隆·马斯克)** 今日在社交媒体上发文，表示AI技术的发展速度超乎想象，未来将深刻影响各行各业。但他也提醒，**AI发展可能带来潜在风险，需要加以重视。**\n*   **Cathie Wood (凯西·伍德)** 旗下ARK基金今日增持了特斯拉股票，并表示看好其在自动驾驶和能源领域的长期发展潜力。同时，她也强调，**科技创新领域存在高风险，投资者需谨慎评估。**\n\n整体来看，大V观点依然积极，但开始强调风险的重要性。考虑到您的风险偏好，建议您在关注科技创新机会的同时，也要注意控制投资风险。\n\n## 明日关注要点\n\n*   **美国通胀数据公布**：明日将公布美国通胀数据，这将对美联储的货币政策产生重要影响。**如果通胀数据超预期，可能引发市场震荡。**\n*   **美联储官员讲话**：关注美联储官员的讲话，从中寻找未来货币政策的线索。**任何鹰派言论都可能对市场产生负面影响。**\n*   **公司财报**：关注是否有重要公司发布财报，以及财报数据对股价的影响。**财报不及预期的公司股价可能面临下跌风险。**\n```', 'metadata': {'report_type': 'daily', 'user_id': 'test_user_llm_1', 'generated_at': '2026-02-09T16:28:34.390661'}}
+2026-02-09 16:28:34.390 | INFO     | nanobot.api.main:generate_report_task:543 - Report generated successfully for test_user_llm_1: manual_20260209_162834
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-02-09 16:28:37.981 | INFO     | nanobot.services.scheduler:stop:101 - ReportScheduler stopped
+INFO:     Application shutdown complete.
+INFO:     Finished server process [25216]
